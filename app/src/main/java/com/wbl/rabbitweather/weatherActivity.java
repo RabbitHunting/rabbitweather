@@ -48,6 +48,8 @@ import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.Response;
 
 public class weatherActivity extends AppCompatActivity {
@@ -63,6 +65,7 @@ public class weatherActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_weather);
+        //版本判定
         if (Build.VERSION.SDK_INT >= 21) {
             View decorView = getWindow().getDecorView();
             decorView.setSystemUiVisibility(
@@ -70,7 +73,8 @@ public class weatherActivity extends AppCompatActivity {
                             | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
-        
+
+        //和风天气sdk
         HeConfig.init("HE2209180850211273", "504bc4df5c254b489956bea1ca0e98d5");
         HeConfig.switchToDevService();
 
@@ -90,11 +94,13 @@ public class weatherActivity extends AppCompatActivity {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String bingPic = prefs.getString("bing_pic",null);
+        //背景图片判断
         if (bingPic != null) {
             Glide.with(this).load(bingPic).into(bingPicImg);
         } else {
             sendRequestWithHttpURLConnection();
         }
+        //是否有城市缓存
         String weathering = prefs.getString("weatherid",null);
         /*Log.d("test", "测试： aaa" + weathering);*/
         if (weathering != null) {
@@ -177,6 +183,7 @@ public class weatherActivity extends AppCompatActivity {
                             tiganwen.setText("体感：" + now.getFeelsLike() + "\u2103");
                             String flandfx = now.getWindScale() + "|" + now.getWindDir();
                             fl.setText(flandfx);
+                            sendRequestWithHttpURLConnection();
                         }
                     });
 
@@ -221,12 +228,15 @@ public class weatherActivity extends AppCompatActivity {
         });
     }
 
-    //图片
+    //每日一图
     private void sendRequestWithHttpURLConnection() {
         // 开启线程来发起网络请求
         new Thread(new Runnable() {
             @Override
             public void run() {
+                //最原始的网络请求方式
+                /*
+
                 HttpURLConnection connection = null;
                 BufferedReader reader = null;
                 try {
@@ -259,10 +269,23 @@ public class weatherActivity extends AppCompatActivity {
                     if (connection != null) {
                         connection.disconnect();
                     }
+                }*/
+                //优化图片的请求方式
+                try {
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder()
+                            .url("https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1")
+                            .build();
+                    Response response = null;
+                    response = client.newCall(request).execute();
+                    parseJSONWithJSONObject(response.body().string());
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }).start();
     }
+    // 在这里进行UI操作，将图片显示出来
     private void showResponse(final String response) {
         runOnUiThread(new Runnable() {
             @Override
