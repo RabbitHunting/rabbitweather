@@ -35,7 +35,15 @@ import com.wbl.rabbitweather.util.DateUtil;
 import com.wbl.rabbitweather.util.HttpUtil;
 
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 
 import okhttp3.Call;
@@ -58,12 +66,11 @@ public class weatherActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= 21) {
             View decorView = getWindow().getDecorView();
             decorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            );
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
-
+        
         HeConfig.init("HE2209180850211273", "504bc4df5c254b489956bea1ca0e98d5");
         HeConfig.switchToDevService();
 
@@ -79,8 +86,15 @@ public class weatherActivity extends AppCompatActivity {
         drawerLayout = findViewById(R.id.drawer_layout);
         navButton = findViewById(R.id.nav_button);
         swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
+        bingPicImg = findViewById(R.id.bing_pic);
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String bingPic = prefs.getString("bing_pic",null);
+        if (bingPic != null) {
+            Glide.with(this).load(bingPic).into(bingPicImg);
+        } else {
+            sendRequestWithHttpURLConnection();
+        }
         String weathering = prefs.getString("weatherid",null);
         /*Log.d("test", "测试： aaa" + weathering);*/
         if (weathering != null) {
@@ -175,6 +189,7 @@ public class weatherActivity extends AppCompatActivity {
                 }
             }
         });
+        sendRequestWithHttpURLConnection();
         swipeRefresh.setRefreshing(false);
     }
 
@@ -206,5 +221,81 @@ public class weatherActivity extends AppCompatActivity {
         });
     }
 
+    //图片
+    private void sendRequestWithHttpURLConnection() {
+        // 开启线程来发起网络请求
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection connection = null;
+                BufferedReader reader = null;
+                try {
+                    URL url = new URL("https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1");
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    InputStream in = connection.getInputStream();
+                    // 下面对获取到的输入流进行读取
+                    reader = new BufferedReader(new InputStreamReader(in));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    parseJSONWithJSONObject(response.toString());
+                    // showResponse(response.toString());
+                    //Ui线程
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if (connection != null) {
+                        connection.disconnect();
+                    }
+                }
+            }
+        }).start();
+    }
+    private void showResponse(final String response) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // 在这里进行UI操作，将结果显示到界面上
+                SharedPreferences.Editor editor = PreferenceManager
+                        .getDefaultSharedPreferences(weatherActivity.this).edit();
+                editor.putString("bing_pic",response);
+                editor.apply();
+                Glide.with(weatherActivity.this).load(response).into(bingPicImg);
+                //  text.setText(response);
+                Log.i("123",response);
+            }
+        });
+    }
+    //解析图片
+    void parseJSONWithJSONObject(String jsonData) {
+        try {
+            // JSONArray jsonArray = new JSONArray(jsonData);
+
+            JSONArray jsonArray = new JSONObject(jsonData).getJSONArray("images");
+
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
+                String url = jsonObject.getString("url");
+
+                Log.d("MainActivity", "url is " + url);
+                String url1="http://cn.bing.com"+url;
+                showResponse(url1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

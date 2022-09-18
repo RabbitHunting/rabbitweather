@@ -1,6 +1,7 @@
 package com.wbl.rabbitweather.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.wbl.rabbitweather.db.City;
 import com.wbl.rabbitweather.db.County;
