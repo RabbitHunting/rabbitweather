@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="?attr/actionBarSize">
-
+<!--当前城市，更新时间-->
     <Button
         android:id="@+id/nav_button"
         android:layout_width="30dp"
@@ -18,16 +18,16 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:textColor="@color/black"
-        android:textSize="20sp" />
+        android:textSize="25sp" />
 
     <TextView
-        android:id="@+id/title_update_text"
+        android:id="@+id/title_update"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
         android:layout_marginRight="10dp"
-        android:textColor="@color/purple_700"
+        android:textColor="@color/darkmagenta"
         android:textSize="16sp" />
 
 </RelativeLayout>

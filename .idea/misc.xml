@@ -7,10 +7,15 @@
         <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/drawable/btn_back_24.xml" value="0.108" />
         <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/drawable/btn_select.xml" value="0.1085" />
         <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/layout/activity_weather.xml" value="0.1" />
         <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/layout/choose_area.xml" value="0.16" />
+        <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/layout/forecast.xml" value="0.1" />
+        <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/layout/now.xml" value="0.1" />
+        <entry key="..\:/Androidwork/rabbitweather/app/src/main/res/layout/title.xml" value="0.264" />
       </map>
     </option>
   </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>

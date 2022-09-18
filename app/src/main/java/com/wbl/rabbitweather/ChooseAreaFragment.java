@@ -108,6 +108,7 @@ public class ChooseAreaFragment extends Fragment {
                     Log.d(TAG, "城市名字： "+countyList.get(position).getCountyName());
                     Intent intent = new Intent(getActivity(),weatherActivity.class);
                     intent.putExtra("weather_id",weatherid);
+                    intent.putExtra("weather_name",countyList.get(position).getCountyName());
                     startActivity(intent);
 
                 }
