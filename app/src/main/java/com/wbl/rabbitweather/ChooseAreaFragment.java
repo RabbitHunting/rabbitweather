@@ -3,7 +3,9 @@ package com.wbl.rabbitweather;
 
 import android.app.Fragment;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -73,6 +75,7 @@ public class ChooseAreaFragment extends Fragment {
      * 当前选中的级别
      */
     private int currentLevel;
+    private String TAG = "test";
 
     @Nullable
     @Override
@@ -99,6 +102,14 @@ public class ChooseAreaFragment extends Fragment {
                 } else if (currentLevel == LEVEL_CITY) {
                     selectedCity = cityList.get(position);
                     queryCounties();
+                } else if (currentLevel == LEVEL_COUNTY) {
+                    String weatherid = countyList.get(position).getWeatherId();
+                    Log.d(TAG, "天气id： "+weatherid);
+                    Log.d(TAG, "城市名字： "+countyList.get(position).getCountyName());
+                    Intent intent = new Intent(getActivity(),weatherActivity.class);
+                    intent.putExtra("weather_id",weatherid);
+                    startActivity(intent);
+
                 }
             }
         });
