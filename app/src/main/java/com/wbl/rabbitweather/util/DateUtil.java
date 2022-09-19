@@ -1,5 +1,6 @@
 package com.wbl.rabbitweather.util;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -13,4 +14,5 @@ public class DateUtil {
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
         return sdf.format(new Date());
     }
+
 }

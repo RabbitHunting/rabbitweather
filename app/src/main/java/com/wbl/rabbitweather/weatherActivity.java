@@ -16,9 +16,13 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -31,8 +35,11 @@ import com.qweather.sdk.bean.weather.WeatherDailyBean;
 import com.qweather.sdk.bean.weather.WeatherNowBean;
 import com.qweather.sdk.view.HeConfig;
 import com.qweather.sdk.view.QWeather;
+
+
 import com.wbl.rabbitweather.util.DateUtil;
 import com.wbl.rabbitweather.util.HttpUtil;
+
 
 
 import org.json.JSONArray;
@@ -44,6 +51,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.Call;
@@ -57,9 +65,12 @@ public class weatherActivity extends AppCompatActivity {
     private static final String TAG = "test";
     private ImageView bingPicImg;
     public SwipeRefreshLayout swipeRefresh;
-    private String mweatherId,mweatherName;
+    private String mweatherId, mweatherName;
     public DrawerLayout drawerLayout;
     private Button navButton;
+    private ScrollView weatherLayout;
+    private LinearLayout forecastLayout;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,30 +102,35 @@ public class weatherActivity extends AppCompatActivity {
         navButton = findViewById(R.id.nav_button);
         swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
         bingPicImg = findViewById(R.id.bing_pic);
+        forecastLayout = findViewById(R.id.forecast_layout);
+        weatherLayout = findViewById(R.id.weather_layout);
+
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String bingPic = prefs.getString("bing_pic",null);
+        String bingPic = prefs.getString("bing_pic", null);
         //背景图片判断
         if (bingPic != null) {
             Glide.with(this).load(bingPic).into(bingPicImg);
+
         } else {
             sendRequestWithHttpURLConnection();
         }
         //是否有城市缓存
-        String weathering = prefs.getString("weatherid",null);
+        String weathering = prefs.getString("weatherid", null);
         /*Log.d("test", "测试： aaa" + weathering);*/
         if (weathering != null) {
-            mweatherId = prefs.getString("weatherid",null);
-            mweatherName = prefs.getString("weathername",null);
+            mweatherId = prefs.getString("weatherid", null);
+            mweatherName = prefs.getString("weathername", null);
             /*Log.d("test", "测试：h " + mweatherId);
             Log.d("test", "测试：h " + mweatherName);*/
-            queryWeather(mweatherId,mweatherName);
+            queryWeather(mweatherId, mweatherName);
         } else {
             mweatherId = getIntent().getStringExtra("weather_id");
             mweatherName = getIntent().getStringExtra("weather_name");
            /* Log.d("test", "测试：w " + mweatherId);
             Log.d("test", "测试：w " + mweatherName);*/
-            queryWeather(mweatherId,mweatherName);
+            weatherLayout.setVisibility(View.INVISIBLE);
+            queryWeather(mweatherId, mweatherName);
         }
 
 
@@ -122,11 +138,11 @@ public class weatherActivity extends AppCompatActivity {
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                mweatherId = prefs.getString("weatherid",null);
-                mweatherName = prefs.getString("weathername",null);
+                mweatherId = prefs.getString("weatherid", null);
+                mweatherName = prefs.getString("weathername", null);
                 /*Log.d("test", "测试： xiala" + mweatherId);
                 Log.d("test", "测试： xiala" + mweatherName);*/
-                queryWeather(mweatherId,mweatherName);
+                queryWeather(mweatherId, mweatherName);
             }
         });
         //滑动菜单
@@ -143,7 +159,7 @@ public class weatherActivity extends AppCompatActivity {
      *
      * @param weatherid
      */
-    public void queryWeather(String weatherid,String weathername) {
+    public void queryWeather(String weatherid, String weathername) {
         QWeather.getWeatherNow(weatherActivity.this, weatherid, Lang.ZH_HANS, Unit.METRIC, new QWeather.OnResultWeatherNowListener() {
 
 
@@ -161,8 +177,8 @@ public class weatherActivity extends AppCompatActivity {
                         .getDefaultSharedPreferences(weatherActivity.this).edit();
                 /*Log.d("test", "测试： cr" + weatherid);
                 Log.d("test", "测试： cr" + weathername);*/
-                editor.putString("weatherid",weatherid);
-                editor.putString("weathername",weathername);
+                editor.putString("weatherid", weatherid);
+                editor.putString("weathername", weathername);
                 editor.apply();
                 //先判断返回的status是否正确，当status正确时获取数据，若status不正确，可查看status对应的Code值找到原因
                 if (Code.OK == weatherBean.getCode()) {
@@ -214,9 +230,39 @@ public class weatherActivity extends AppCompatActivity {
 
             @Override
             public void onSuccess(WeatherDailyBean weatherDailyBean) {
-                //Log.d(TAG, "获取天气成功： " + new Gson().toJson(weatherDailyBean));
+
+                //Log.d(TAG, "获取未来天气成功： " + new Gson().toJson(weatherDailyBean));
                 if (Code.OK == weatherDailyBean.getCode()) {
                     List<WeatherDailyBean.DailyBean> dailyBeans = weatherDailyBean.getDaily();
+                    //Log.d(TAG, "测试1：" + dailyBeans);
+                    weatherActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            forecastLayout.removeAllViews();
+                            for (int i = 0;i<dailyBeans.size();i++){
+                                WeatherDailyBean.DailyBean dailyBean = dailyBeans.get(i);
+                                String dataw = dailyBean.getFxDate();
+                                String weatherin;
+                                if (dailyBean.getTextDay().equals(dailyBean.getTextNight())) {
+                                    weatherin = dailyBean.getTextDay();
+                                } else {
+                                    weatherin = dailyBean.getTextDay() + "转" + dailyBean.getTextNight();
+                                }
+                                String wendu = dailyBean.getTempMax()+"/"+dailyBean.getTempMin();
+                                View view = LayoutInflater.from(weatherActivity.this)
+                                        .inflate(R.layout.forecast_item,forecastLayout,false);
+                                TextView dataText = view.findViewById(R.id.date_text);
+                                TextView infoText = view.findViewById(R.id.info_text);
+                                TextView wenText = view.findViewById(R.id.wen_text);
+                                dataText.setText(dataw);
+                                infoText.setText(weatherin);
+                                wenText.setText(wendu);
+                                forecastLayout.addView(view);
+                            }
+                        }
+                    });
+
+                    weatherLayout.setVisibility(View.VISIBLE);
 
                 } else {
                     //在此查看返回数据失败的原因
@@ -285,6 +331,7 @@ public class weatherActivity extends AppCompatActivity {
             }
         }).start();
     }
+
     // 在这里进行UI操作，将图片显示出来
     private void showResponse(final String response) {
         runOnUiThread(new Runnable() {
@@ -293,14 +340,15 @@ public class weatherActivity extends AppCompatActivity {
                 // 在这里进行UI操作，将结果显示到界面上
                 SharedPreferences.Editor editor = PreferenceManager
                         .getDefaultSharedPreferences(weatherActivity.this).edit();
-                editor.putString("bing_pic",response);
+                editor.putString("bing_pic", response);
                 editor.apply();
                 Glide.with(weatherActivity.this).load(response).into(bingPicImg);
                 //  text.setText(response);
-                Log.i("123",response);
+                //Log.i("123", response);
             }
         });
     }
+
     //解析图片
     void parseJSONWithJSONObject(String jsonData) {
         try {
@@ -313,7 +361,7 @@ public class weatherActivity extends AppCompatActivity {
                 String url = jsonObject.getString("url");
 
                 Log.d("MainActivity", "url is " + url);
-                String url1="http://cn.bing.com"+url;
+                String url1 = "http://cn.bing.com" + url;
                 showResponse(url1);
             }
         } catch (Exception e) {
