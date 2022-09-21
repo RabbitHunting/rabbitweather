@@ -5,6 +5,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 
@@ -19,6 +20,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -32,6 +34,7 @@ import com.qweather.sdk.bean.base.Code;
 import com.qweather.sdk.bean.base.Lang;
 import com.qweather.sdk.bean.base.Unit;
 import com.qweather.sdk.bean.weather.WeatherDailyBean;
+import com.qweather.sdk.bean.weather.WeatherHourlyBean;
 import com.qweather.sdk.bean.weather.WeatherNowBean;
 import com.qweather.sdk.view.HeConfig;
 import com.qweather.sdk.view.QWeather;
@@ -39,7 +42,6 @@ import com.qweather.sdk.view.QWeather;
 
 import com.wbl.rabbitweather.util.DateUtil;
 import com.wbl.rabbitweather.util.HttpUtil;
-
 
 
 import org.json.JSONArray;
@@ -69,7 +71,8 @@ public class weatherActivity extends AppCompatActivity {
     public DrawerLayout drawerLayout;
     private Button navButton;
     private ScrollView weatherLayout;
-    private LinearLayout forecastLayout;
+    private HorizontalScrollView weatherhory;
+    private LinearLayout forecastLayout, hourly_layout;
 
 
     @Override
@@ -104,6 +107,8 @@ public class weatherActivity extends AppCompatActivity {
         bingPicImg = findViewById(R.id.bing_pic);
         forecastLayout = findViewById(R.id.forecast_layout);
         weatherLayout = findViewById(R.id.weather_layout);
+        weatherhory = findViewById(R.id.weather_Horilayout);
+        hourly_layout = findViewById(R.id.hourly_layout);
 
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -130,6 +135,7 @@ public class weatherActivity extends AppCompatActivity {
            /* Log.d("test", "测试：w " + mweatherId);
             Log.d("test", "测试：w " + mweatherName);*/
             weatherLayout.setVisibility(View.INVISIBLE);
+            weatherhory.setVisibility(View.INVISIBLE);
             queryWeather(mweatherId, mweatherName);
         }
 
@@ -184,6 +190,7 @@ public class weatherActivity extends AppCompatActivity {
                 if (Code.OK == weatherBean.getCode()) {
                     WeatherNowBean.NowBaseBean now = weatherBean.getNow();
                     weatheryu(weatherid);
+                    hourlys(weatherid);
                     weatherActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -193,7 +200,7 @@ public class weatherActivity extends AppCompatActivity {
                             Log.d(TAG, "风向：" + fengxiang);
                             Log.d(TAG, "风力：" + fengli + "级");*/
                             weather_name.setText(weathername);
-                            title_upddate.setText(DateUtil.times1());
+                            title_upddate.setText(DateUtil.times(now.getObsTime()));
                             degree_text.setText(now.getTemp() + "\u2103");
                             weather_info.setText(now.getText());
                             tiganwen.setText("体感：" + now.getFeelsLike() + "\u2103");
@@ -220,7 +227,7 @@ public class weatherActivity extends AppCompatActivity {
      * 获取3天预报数据
      */
     public void weatheryu(String weatherid) {
-        QWeather.getWeather3D(weatherActivity.this, weatherid, Lang.ZH_HANS, Unit.METRIC, new QWeather.OnResultWeatherDailyListener() {
+        QWeather.getWeather7D(weatherActivity.this, weatherid, Lang.ZH_HANS, Unit.METRIC, new QWeather.OnResultWeatherDailyListener() {
             @Override
             public void onError(Throwable throwable) {
                 Log.i(TAG, "onError: ", throwable);
@@ -239,18 +246,19 @@ public class weatherActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             forecastLayout.removeAllViews();
-                            for (int i = 0;i<dailyBeans.size();i++){
+                            for (int i = 0; i < dailyBeans.size(); i++) {
                                 WeatherDailyBean.DailyBean dailyBean = dailyBeans.get(i);
                                 String dataw = dailyBean.getFxDate();
+                                dataw = DateUtil.time2(dataw);
                                 String weatherin;
                                 if (dailyBean.getTextDay().equals(dailyBean.getTextNight())) {
                                     weatherin = dailyBean.getTextDay();
                                 } else {
                                     weatherin = dailyBean.getTextDay() + "转" + dailyBean.getTextNight();
                                 }
-                                String wendu = dailyBean.getTempMax()+"/"+dailyBean.getTempMin();
+                                String wendu = dailyBean.getTempMax() + "/" + dailyBean.getTempMin() + "\u2103";
                                 View view = LayoutInflater.from(weatherActivity.this)
-                                        .inflate(R.layout.forecast_item,forecastLayout,false);
+                                        .inflate(R.layout.forecast_item, forecastLayout, false);
                                 TextView dataText = view.findViewById(R.id.date_text);
                                 TextView infoText = view.findViewById(R.id.info_text);
                                 TextView wenText = view.findViewById(R.id.wen_text);
@@ -262,8 +270,6 @@ public class weatherActivity extends AppCompatActivity {
                         }
                     });
 
-                    weatherLayout.setVisibility(View.VISIBLE);
-
                 } else {
                     //在此查看返回数据失败的原因
                     Code code = weatherDailyBean.getCode();
@@ -272,6 +278,60 @@ public class weatherActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    /**
+     * 获取24小时预报数据
+     */
+    private void hourlys(String weatherId) {
+        QWeather.getWeather24Hourly(weatherActivity.this, weatherId, Lang.ZH_HANS, Unit.METRIC, new QWeather.OnResultWeatherHourlyListener() {
+            @Override
+            public void onError(Throwable throwable) {
+                Log.i(TAG, "onError: ", throwable);
+                System.out.println("Weather Now Error:" + new Gson());
+            }
+
+            @Override
+            public void onSuccess(WeatherHourlyBean weatherHourlyBean) {
+                //Log.d(TAG, "获取未来天气成功： " + new Gson().toJson(weatherHourlyBean));
+                if (Code.OK == weatherHourlyBean.getCode()) {
+                    List<WeatherHourlyBean.HourlyBean> hourlyBeans = weatherHourlyBean.getHourly();
+                    weatherActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            hourly_layout.removeAllViews();
+                            for (int i = 0; i < hourlyBeans.size(); i++) {
+                                WeatherHourlyBean.HourlyBean hourlyBean = hourlyBeans.get(i);
+                                String time = hourlyBean.getFxTime();
+                                Log.d(TAG, "时间测试1： " + time);
+                                time = DateUtil.times(time);
+                                Log.d(TAG, "时间测试2： " + time);
+                                String info = hourlyBean.getText();
+                                String temp = hourlyBean.getTemp() + "\u2103";
+                                View view = LayoutInflater.from(weatherActivity.this)
+                                        .inflate(R.layout.hourly_item, hourly_layout, false);
+                                TextView hourlyTime = view.findViewById(R.id.hourly_time);
+                                TextView hourlyInfo = view.findViewById(R.id.hourly_info);
+                                TextView hourlyTemp = view.findViewById(R.id.hourly_temp);
+                                hourlyTime.setText(time);
+                                hourlyInfo.setText(info);
+                                hourlyTemp.setText(temp);
+                                hourly_layout.addView(view);
+
+                            }
+                        }
+                    });
+                    weatherLayout.setVisibility(View.VISIBLE);
+                    weatherhory.setVisibility(View.VISIBLE);
+
+                } else {
+                    //在此查看返回数据失败的原因
+                    Code code = weatherHourlyBean.getCode();
+                    Log.i(TAG, "failed code: " + code);
+                }
+            }
+        });
+
     }
 
     //每日一图

@@ -39,6 +39,17 @@
                     <include layout="@layout/title" />
 
                     <include layout="@layout/now" />
+                    <HorizontalScrollView
+                        android:id="@+id/weather_Horilayout"
+                        android:overScrollMode="never"
+                        android:scrollbars="none"
+                        android:layout_margin="15dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <include layout="@layout/hourly"/>
+                    </HorizontalScrollView>
+
+
                     <include layout="@layout/forecast"/>
                 </LinearLayout>
 
